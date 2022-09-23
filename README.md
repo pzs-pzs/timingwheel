@@ -1,5 +1,5 @@
 # Time Wheel
-support massive scheduled tasks in short time
+support massive scheduled tasks in short time, high performance
 
 ## Install
 ```go
