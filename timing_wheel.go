@@ -10,35 +10,41 @@ var (
 	ErrInvalidInterval = errors.New("invalid time wheel interval time")
 	ErrInvalidSize     = errors.New("invalid time wheel size")
 	ErrClosedTimeWheel = errors.New("time wheel is closed")
+	ErrInvalidExecFunc = errors.New("invalid task exec function")
 )
 
-type Exec func(key string)
+type (
+	// Exec tick callback
+	Exec func(key string)
 
-type task struct {
-	key    string
-	exec   Exec
-	round  int
-	remove bool
-	pos    int
-	circle bool
-	gap    int
-	async  bool
-}
+	// task register task into time wheel
+	task struct {
+		key    string
+		exec   Exec
+		round  int
+		remove bool
+		pos    int
+		circle bool
+		gap    int
+		async  bool
+	}
 
-type TimingWheel struct {
-	// precision
-	interval    time.Duration
-	ticker      *time.Ticker
-	slots       []map[string]*task
-	tasks       map[string]*task
-	pos         int
-	size        int
-	addTaskCh   chan *task
-	moveTaskCh  chan *task
-	onceClose   sync.Once
-	rwMutex     *sync.RWMutex
-	closeSignal chan struct{}
-}
+	// TimingWheel a struct define for time wheel algorithm
+	TimingWheel struct {
+		// precision
+		interval    time.Duration
+		ticker      *time.Ticker
+		slots       []map[string]*task
+		tasks       map[string]*task
+		pos         int
+		size        int
+		addTaskCh   chan *task
+		moveTaskCh  chan *task
+		onceClose   sync.Once
+		rwMutex     *sync.RWMutex
+		closeSignal chan struct{}
+	}
+)
 
 func NewTimingWheel(interval time.Duration, size int) (*TimingWheel, error) {
 	if interval < 0 {
@@ -104,6 +110,9 @@ func (tw *TimingWheel) AddPeriodTask(delay time.Duration, key string, async bool
 }
 
 func (tw *TimingWheel) addInnerTask(delay time.Duration, key string, async, circle bool, exec Exec) error {
+	if exec == nil {
+		return ErrInvalidExecFunc
+	}
 	if delay < tw.interval {
 		delay = tw.interval
 	}
